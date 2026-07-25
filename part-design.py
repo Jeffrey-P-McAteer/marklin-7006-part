@@ -20,7 +20,7 @@ except:
 # All units in MM
 
 inner_length = 7.7
-inner_width = 3.0 # 3.07 # Jeff's adjusting this because it makes boolean geometric operations a pain in the butt - let me know if we really need a 0.07mm lip.
+inner_width = 3.07
 base_height = 1.0
 cylinder_radius = 1.5
 cylinder_extension_height = 3.0
