@@ -4,6 +4,7 @@
 # dependencies = [
 #   "moderngl-window>=3.1",
 #   "moderngl>=5.10",
+#   "glfw",
 #   "numpy",
 #   "scipy",
 #   "trimesh",
@@ -85,6 +86,7 @@ class STLViewer(mglw.WindowConfig):
     gl_version = (3, 3)
     title = "STL Preview"
     window_size = (1200, 800)
+    enable_events = True
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
@@ -110,7 +112,18 @@ class STLViewer(mglw.WindowConfig):
 
         self.pan = np.zeros(3, dtype="f4")
 
+        self.mouse_left = False
+        self.mouse_middle = False
+        self.mouse_right = False
+
         self.reload_mesh()
+
+        self.mouse_buttons = set()
+
+        self.wnd.mouse_press_event_func = self.mouse_press_event
+        self.wnd.mouse_release_event_func = self.mouse_release_event
+        self.wnd.mouse_drag_event_func = self.mouse_drag_event
+        self.wnd.mouse_scroll_event_func = self.mouse_scroll_event
 
 
     def reload_mesh(self):
@@ -250,49 +263,44 @@ class STLViewer(mglw.WindowConfig):
 
         self.ctx.wireframe = False
 
+    def mouse_press_event(self, x, y, button):
+        #print("PRESS", x, y, button)
+        self.mouse_buttons.add(button)
 
-    def mouse_drag_event(
-        self,
-        x,
-        y,
-        dx,
-        dy
-    ):
 
-        buttons = self.wnd.mouse_states.buttons
+    def mouse_release_event(self, x, y, button):
+        #print("RELEASE", x, y, button)
+        self.mouse_buttons.discard(button)
 
-        if buttons.left:
-            #
-            # Orbit
-            #
+
+    def mouse_drag_event(self, x, y, dx, dy):
+        #print("DRAG", x, y, dx, dy, self.mouse_buttons)
+
+        # GLFW:
+        # 1 = left
+        # 2 = right
+        # 3 = middle (depending on backend)
+
+        if 1 in self.mouse_buttons:
             self.yaw += dx * 0.5
             self.pitch += dy * 0.5
 
-        elif buttons.middle or buttons.right:
-            #
-            # Pan
-            #
+        elif 2 in self.mouse_buttons or 3 in self.mouse_buttons:
             scale = self.distance * 0.002
 
             self.pan[0] += dx * scale
             self.pan[1] -= dy * scale
 
 
-    def mouse_scroll_event(
-        self,
-        x,
-        y,
-        dx,
-        dy
-    ):
+    def mouse_scroll_event(self, x_offset, y_offset):
+        #print("SCROLL", x_offset, y_offset)
 
-        self.distance *= 0.9 ** dy
+        self.distance *= 0.9 ** y_offset
 
-        if self.vao is None:
-            self.distance = max(
-                self.radius * 2.5,
-                10
-            )
+        self.distance = max(
+            self.distance,
+            self.radius * 0.05
+        )
 
 
 mglw.run_window_config(STLViewer)
