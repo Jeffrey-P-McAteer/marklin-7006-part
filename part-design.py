@@ -120,6 +120,42 @@ top_l_box_negative = (
 cutters.append(top_l_box_negative)
 
 
+base_l_box_positive = (
+    cq.Workplane("XY")
+    .box(
+        cylinder_lcut_base_inset * 2.0,
+        cylinder_lcut_width,
+        cylinder_extension_height
+    )
+    .translate(
+        (
+            ((part_total_length) / 2.0),
+            0,
+            0
+        )
+    )
+)
+cutters.append(base_l_box_positive)
+
+
+base_l_box_negative = (
+    cq.Workplane("XY")
+    .box(
+        cylinder_lcut_base_inset * 2.0,
+        cylinder_lcut_width,
+        cylinder_extension_height
+    )
+    .translate(
+        (
+            -((part_total_length) / 2.0),
+            0,
+            0
+        )
+    )
+)
+cutters.append(base_l_box_negative)
+
+
 # Now we slice the computex boxes off one at a time
 for cutter in cutters:
     part = part.cut(cutter)
