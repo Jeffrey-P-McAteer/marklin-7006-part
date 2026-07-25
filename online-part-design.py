@@ -23,30 +23,13 @@ output_stl = os.path.join(io_folder, 'part.stl')
 output_file = os.path.join(io_folder, 'output.txt')
 output_errors = os.path.join(io_folder, 'errors.txt')
 
-if not os.path.exists(input_variables):
-    with open(input_variables, 'w+') as fd:
-        fd.write('''
-
-inner_length = 10.7
-inner_width = 3.07
-base_height = 1.00
-cylinder_radius = 3.1 / 2.0 # 1.5
-cylinder_extension_height = 3.11
-cylinder_lcut_base_inset = 0.85   # Section in line w/ base, distance from edge in towards center
-cylinder_lcut_raised_inset = cylinder_lcut_base_inset + 1.3 # Section above the base
-cylinder_lcut_width = 1.0 # Width of the lcut, centered on the cylinder
-
-part_total_length = inner_length + (2.0*cylinder_radius)
-cylinder_total_height = base_height + cylinder_extension_height
-
-''')
-
 input_variables_last_mtime = 0
 
 def now_timestamp():
     return '{:%Y-%m-%d %H:%M:%S}'.format(datetime.datetime.now())
 
 def output(txt):
+    print(txt)
     with open(output_file, 'a+') as fd:
         fd.write(txt)
         fd.write('\n')
@@ -70,7 +53,25 @@ def load_variables(filename):
     }
 
 while True:
+    if not os.path.exists(input_variables):
+        with open(input_variables, 'w+') as fd:
+            fd.write('''
+inner_length = 10.7
+inner_width = 3.07
+base_height = 1.00
+cylinder_radius = 3.1 / 2.0 # 1.5
+cylinder_extension_height = 3.11
+cylinder_lcut_base_inset = 0.85   # Section in line w/ base, distance from edge in towards center
+cylinder_lcut_raised_inset = cylinder_lcut_base_inset + 1.3 # Section above the base
+cylinder_lcut_width = 1.0 # Width of the lcut, centered on the cylinder
+
+part_total_length = inner_length + (2.0*cylinder_radius)
+cylinder_total_height = base_height + cylinder_extension_height
+
+    ''')
+
     time.sleep(30)
+
     try:
         input_variables_mtime = os.path.getmtime(input_variables)
         if input_variables_mtime > input_variables_last_mtime:
