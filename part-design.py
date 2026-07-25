@@ -19,11 +19,11 @@ except:
 # use equations below to calculate all dependent transforms.
 # All units in MM
 
-inner_length = 7.7
-inner_width = 3.07
-base_height = 1.0
-cylinder_radius = 1.5
-cylinder_extension_height = 3.0
+inner_length = 10.7
+inner_width = 3.04
+base_height = 1.01
+cylinder_radius = 3.1 / 2.0 # 1.5
+cylinder_extension_height = 3.11
 cylinder_lcut_base_inset = 0.85   # Section in line w/ base, distance from edge in towards center
 cylinder_lcut_raised_inset = cylinder_lcut_base_inset + 1.3 # Section above the base
 cylinder_lcut_width = 0.79 # Width of the lcut, centered on the cylinder
