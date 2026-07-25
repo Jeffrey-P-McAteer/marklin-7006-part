@@ -380,12 +380,14 @@ class STLViewer(mglw.WindowConfig):
             print(f"View: {name} (orthographic)")
             return
 
-        if key == keys.O:
+        if key == keys.O or key == keys.NUMBER_0:
+            # Toggle projection only -- yaw/pitch/pan/distance are left
+            # untouched so the view doesn't jump when switching.
             self.ortho = not self.ortho
             print(f"Projection: {'orthographic' if self.ortho else 'perspective'}")
             return
 
-        if key == keys.NUMBER_0 or key == keys.HOME:
+        if key == keys.HOME:
             # Reset to the original default isometric-ish perspective view.
             self.yaw = 30.0
             self.pitch = -25.0
