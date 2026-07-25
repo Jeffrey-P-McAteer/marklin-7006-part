@@ -58,12 +58,21 @@ void main()
 FRAGMENT_SHADER = """
 #version 330
 
+uniform bool wire_mode;
+
 in vec3 v_normal;
 
 out vec4 f_color;
 
 void main()
 {
+    if (wire_mode)
+    {
+        // Dark, high-contrast overlay lines on top of the shaded solid.
+        f_color = vec4(0.05, 0.05, 0.06, 1.0);
+        return;
+    }
+
     float light = dot(
         normalize(v_normal),
         normalize(vec3(0.4,0.8,1.0))
@@ -79,6 +88,19 @@ void main()
     );
 }
 """
+
+
+# Named camera presets: (yaw_degrees, pitch_degrees)
+# yaw is rotation about Y (applied after pitch), pitch is rotation about X,
+# matching the order already used in on_render's view matrix.
+VIEW_PRESETS = {
+    "front":  (0.0, 0.0),
+    "back":   (180.0, 0.0),
+    "left":   (-90.0, 0.0),
+    "right":  (90.0, 0.0),
+    "top":    (0.0, -90.0),
+    "bottom": (0.0, 90.0),
+}
 
 
 class STLViewer(mglw.WindowConfig):
@@ -107,10 +129,16 @@ class STLViewer(mglw.WindowConfig):
 
         self.distance = 50
 
-        self.yaw = 30
-        self.pitch = -25
+        self.yaw = 30.0
+        self.pitch = -25.0
 
         self.pan = np.zeros(3, dtype="f4")
+
+        # Orthographic projection is used for the axis-aligned view presets
+        # (top/bottom/left/right/front/back) since perspective distorts
+        # apparent alignment between features on opposite sides of a part.
+        # Free orbiting defaults back to perspective for a more natural feel.
+        self.ortho = False
 
         self.mouse_left = False
         self.mouse_middle = False
@@ -124,6 +152,7 @@ class STLViewer(mglw.WindowConfig):
         self.wnd.mouse_release_event_func = self.mouse_release_event
         self.wnd.mouse_drag_event_func = self.mouse_drag_event
         self.wnd.mouse_scroll_event_func = self.mouse_scroll_event
+        self.wnd.key_event_func = self.key_event
 
 
     def reload_mesh(self):
@@ -222,14 +251,26 @@ class STLViewer(mglw.WindowConfig):
         if self.vao is None:
             return
 
+        if self.ortho:
+            # Tie the ortho half-height to self.distance so scroll-to-zoom
+            # keeps working the same way it does in perspective mode.
+            half_h = max(self.distance * 0.5, self.radius * 0.01)
+            half_w = half_h * self.wnd.aspect_ratio
 
-        projection = Matrix44.perspective_projection(
-            45,
-            self.wnd.aspect_ratio,
-            0.01,
-            100000,
-            dtype="f4"
-        )
+            projection = Matrix44.orthogonal_projection(
+                -half_w, half_w,
+                -half_h, half_h,
+                -100000, 100000,
+                dtype="f4"
+            )
+        else:
+            projection = Matrix44.perspective_projection(
+                45,
+                self.wnd.aspect_ratio,
+                0.01,
+                100000,
+                dtype="f4"
+            )
 
         view = (
             Matrix44.from_translation(
@@ -253,14 +294,19 @@ class STLViewer(mglw.WindowConfig):
             (projection * view).astype("f4")
         )
 
-        # Solid shaded pass
+        # Solid shaded pass, nudged back slightly (via glPolygonOffset) so
+        # the wireframe pass drawn on top doesn't z-fight with it.
+        self.program["wire_mode"].value = False
         self.ctx.wireframe = False
+        self.ctx.polygon_offset = (1.0, 1.0)
         self.vao.render()
+        self.ctx.polygon_offset = (0.0, 0.0)
 
-        # Wireframe inspection overlay
+        # Wireframe inspection overlay, drawn on top in a dark contrasting
+        # color so edges are always visible regardless of shading/lighting.
+        self.program["wire_mode"].value = True
         self.ctx.wireframe = True
         self.vao.render()
-
         self.ctx.wireframe = False
 
     def mouse_press_event(self, x, y, button):
@@ -284,6 +330,9 @@ class STLViewer(mglw.WindowConfig):
         if 1 in self.mouse_buttons:
             self.yaw += dx * 0.5
             self.pitch += dy * 0.5
+            # Orbiting freely no longer guarantees an axis-aligned view,
+            # so drop back to perspective.
+            self.ortho = False
 
         elif 2 in self.mouse_buttons or 3 in self.mouse_buttons:
             scale = self.distance * 0.002
@@ -302,6 +351,47 @@ class STLViewer(mglw.WindowConfig):
             self.radius * 0.05
         )
 
+    def key_event(self, key, action, modifiers):
+
+        keys = self.wnd.keys
+
+        if action != keys.ACTION_PRESS:
+            return
+
+        preset_keys = {
+            keys.NUMBER_1: "front",
+            keys.NUMBER_2: "back",
+            keys.NUMBER_3: "left",
+            keys.NUMBER_4: "right",
+            keys.NUMBER_5: "top",
+            keys.NUMBER_6: "bottom",
+            keys.F: "front",
+            keys.K: "back",
+            keys.L: "left",
+            keys.R: "right",
+            keys.T: "top",
+            keys.B: "bottom",
+        }
+
+        if key in preset_keys:
+            name = preset_keys[key]
+            self.yaw, self.pitch = VIEW_PRESETS[name]
+            self.ortho = True
+            print(f"View: {name} (orthographic)")
+            return
+
+        if key == keys.O:
+            self.ortho = not self.ortho
+            print(f"Projection: {'orthographic' if self.ortho else 'perspective'}")
+            return
+
+        if key == keys.NUMBER_0 or key == keys.HOME:
+            # Reset to the original default isometric-ish perspective view.
+            self.yaw = 30.0
+            self.pitch = -25.0
+            self.pan[:] = 0.0
+            self.ortho = False
+            print("View: reset (perspective)")
+
 
 mglw.run_window_config(STLViewer)
-
