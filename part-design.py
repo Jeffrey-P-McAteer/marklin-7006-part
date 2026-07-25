@@ -24,9 +24,9 @@ inner_width = 3.07
 base_height = 1.00
 cylinder_radius = 3.1 / 2.0 # 1.5
 cylinder_extension_height = 3.11
-cylinder_lcut_base_inset = 1.0 # 0.85   # Section in line w/ base, distance from edge in towards center
+cylinder_lcut_base_inset = 0.85   # Section in line w/ base, distance from edge in towards center
 cylinder_lcut_raised_inset = cylinder_lcut_base_inset + 1.3 # Section above the base
-cylinder_lcut_width = 0.79 # Width of the lcut, centered on the cylinder
+cylinder_lcut_width = 1.0 # Width of the lcut, centered on the cylinder
 
 # Computed lengths for simpler equations downstairs
 part_total_length = inner_length + (2.0*cylinder_radius)
